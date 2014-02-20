@@ -1,0 +1,1223 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7" />
+    <title>Hello Meijun!</title>
+    <style type="text/css">
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { 
+    margin:0;
+    padding:0;
+}
+table {
+    border-collapse:collapse;
+    border-spacing:0;
+}
+fieldset,img { 
+    border:0;
+}
+address,caption,cite,code,dfn,em,strong,th,var {
+    font-style:normal;
+    font-weight:normal;
+}
+ol,ul {
+    list-style:none;
+}
+caption,th {
+    text-align:left;
+}
+h1,h2,h3,h4,h5,h6 {
+    font-size:100%;
+    font-weight:bold;
+}
+q:before,q:after {
+    content:'';
+}
+abbr,acronym { border:0;
+}
+
+body, html {
+    height: 100%;
+    width: 100%;
+}
+
+/* Common 定义基本样式 */
+body {
+    font: 12px/1.8 'Microsoft Yahei','Helvetica Neue',Helvetica,Arial,Sans-serif;
+    padding: 0;
+    margin: 0;
+    color: #333333;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+#loading {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    z-index: 999;
+    background: url("http://lukesign.u.qiniudn.com/images_site_loading.gif") no-repeat center center #FFFAD1;
+    top: 0;
+    left: 0;
+    text-align: center;
+    line-height: 300px;
+    font-size: 32px;
+    color: #666;
+}
+#theEnd {
+    height: 0%;
+    width: 100%;
+    line-height: 0;
+    font-size: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: 999;
+    background-color: #FFFAD1;
+    top: 0;
+    left: 0;
+}
+
+#theEndText {
+    position: absolute;
+    left: 0;
+    z-index: 9999;
+    width: 100%;
+    text-align: center;
+    font-size: 26px;
+    line-height: 2;
+    top: 50%;
+    margin-top: -100px;
+    height: 200px;
+}
+    </style>
+</head>
+<body>
+    <div id="loading">正在加载...</div>
+    <div id="theEnd"></div>
+    <div id="map"></div>
+
+<!-- 指定全局的分享内容 -->
+<input id="wsContent" type="hidden" value="一个送给美君的生日礼物，也是送给所有异地恋人的礼物「变得是距离，不变的是坚持」。 via @LOO2K">
+<!-- 指定全局的分享链接 -->
+<input id="wsUrl" type="hidden" value="http://liumeijun.com/">
+<!-- 指定全局的分享图片 -->
+<input id="wsPic" type="hidden" value="http://lukesign.u.qiniudn.com/social.png">
+
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/1.10.2/jquery.js"></script>
+<script type="text/javascript" src="http://lukesign.u.qiniudn.com/jquery.wshare.js"></script>
+<script type="text/javascript" src="http://lukesign.u.qiniudn.com/sm_soundmanager2-nodebug-jsmin.js"></script>
+<script type="text/javascript">
+(function(a,b){"use strict";var c=function(){var a=[["requestFullscreen","exitFullscreen","fullscreenchange","fullscreen","fullscreenElement"],["webkitRequestFullScreen","webkitCancelFullScreen","webkitfullscreenchange","webkitIsFullScreen","webkitCurrentFullScreenElement"],["mozRequestFullScreen","mozCancelFullScreen","mozfullscreenchange","mozFullScreen","mozFullScreenElement"]];for(var c=0,d=a.length;c<d;c++){var e=a[c];if(e[1]in b)return e}}();if(!c)return a.screenfull=!1;var d="ALLOW_KEYBOARD_INPUT"in Element,e={init:function(){return b.addEventListener(c[2],function(a){e.isFullscreen=b[c[3]],e.element=b[c[4]],e.onchange(a)}),this},isFullscreen:b[c[3]],element:b[c[4]],request:function(a){a=a||b.documentElement,a[c[0]](d&&Element.ALLOW_KEYBOARD_INPUT),b.isFullscreen||a[c[0]]()},exit:function(){b[c[1]]()},toggle:function(a){this.isFullscreen?this.exit():this.request(a)},onchange:function(){}};a.screenfull=e.init()})(window,document)
+</script>
+<script type="text/javascript">
+
+/*
+ * 常用变量
+ * 梅州嘉应学院： 116.135018,24.33438
+ * 广州广外艺：   113.345774,23.153356
+ * 426 KM
+ * 5H
+ */
+// 初始化地图中心
+var MP_CEN = {lng: 3.894763, lat: 44.529534};
+// 中国中心
+var CN_CEN = {lng: 103.758427, lat: 36.172333};
+// 嘉应学院
+var MZ_JYU = {lng: 116.135018, lat: 24.33438};
+// 广外艺
+var GZ_GTC = {lng: 113.345774, lat: 23.153356};
+// 广州市
+var GD_GZS = {lng: 113.256838, lat: 23.157309};
+// 河源市
+var GD_HYS = {lng: 114.701682, lat: 23.754195};
+// 背景音乐
+var MUSIC;
+
+function zoomTo(zoom, time, callback, point) {
+    var time     = time || 1000;
+    var callback = callback || function() {};
+    var loop     = '';
+    function loopZoom() {
+        var curZoom  = map.getZoom();
+        if( curZoom == zoom ) {
+            clearTimeout(loop);
+            callback();
+            return false;
+        }
+        var plus    = curZoom > zoom ? -1 : 1;
+        var toZoom  = curZoom + plus;
+        map.setZoom(toZoom);
+        if( point ) {
+            map.setCenter(point);
+        }
+        var center = map.getCenter();
+        loop = setTimeout(loopZoom, time);
+    }
+    loopZoom();
+}
+
+function loopWin(loopList, time, callback) {
+    var i    = 0;
+    var len  = loopList.length;
+    var callback = callback || function () {};
+    var timeout = '';
+
+    function loopWinInner() {
+        if( i == len ) {
+            clearTimeout(timeout);
+            setTimeout(callback, 1000);
+            return false;
+        }
+
+        var opts = {
+            title: loopList[i].title,
+            maxWidth: 600,
+            height: 0
+        }
+        var infoWindow = new BMap.InfoWindow(loopList[i].content, opts);
+        map.openInfoWindow(infoWindow, new BMap.Point(loopList[i].point.lng, loopList[i].point.lat));
+        infoWindow.redraw();
+        i++;
+        if( loopList[i] ) {
+            var time = loopList[i].timeout || 2000;
+        } else {
+            var time = 2000;
+        }
+        timeout = setTimeout(loopWinInner, time);
+    }
+
+    loopWinInner();
+}
+
+function panZoom_GTC() {
+    map.panTo(new BMap.Point(GZ_GTC.lng, GZ_GTC.lat));
+    setTimeout(function() {
+        zoomTo(18, 800, function() {
+            var marker = new BMap.Marker(GZ_GTC);
+            map.addOverlay(marker);
+            marker.setAnimation(BMAP_ANIMATION_BOUNCE);
+            setTimeout(panZoom_JYU, 1000);
+        }, GZ_GTC);
+    }, 800);
+}
+
+function panZoom_JYU() {
+    zoomTo(8, 1000, function() {
+        map.panTo(new BMap.Point(MZ_JYU.lng, MZ_JYU.lat));
+        setTimeout(function() {
+            zoomTo(16, 800, function() {
+                var marker = new BMap.Marker(MZ_JYU);
+                map.addOverlay(marker);
+                marker.setAnimation(BMAP_ANIMATION_BOUNCE);
+                setTimeout(panZoom_HEY, 1000);
+            });
+        }, 1000);
+    });
+}
+
+function panZoom_HEY() {
+    zoomTo(9, 1000, function() {
+        map.panTo(new BMap.Point(GD_HYS.lng, GD_HYS.lat));
+        setTimeout(function() {
+            var start = new BMap.Point(MZ_JYU.lng, MZ_JYU.lat);
+            var end   = new BMap.Point(GZ_GTC.lng, GZ_GTC.lat);
+            var driving2 = new BMap.DrivingRoute(map, {renderOptions:{map: map, autoViewport: false}});
+            driving2.search(start, end);
+            setTimeout(function() {
+                var between = [
+                    {
+                        title: '梅州 → 广州',
+                        content: '426 km.',
+                        point: MZ_JYU
+                    },
+                    {
+                        title: '梅州 → 广州',
+                        content: '5 hours by train.',
+                        point: GZ_GTC
+                    },
+                    {
+                        title: '变得是距离，不变的是坚持；',
+                        content: '<img src="http://lukesign.u.qiniudn.com/images_ticket.jpg" width="200" height="149" alt="ticket" />',
+                        point: MZ_JYU
+                    }
+                ];
+                loopWin(between, 2000, showPhotos);
+            }, 2000);
+        }, 1000);
+    });
+}
+
+function showPhotos() {
+    map.clearOverlays();
+    map.panTo(new BMap.Point(GD_GZS.lng, GD_GZS.lat));
+    setTimeout(function() {
+        zoomTo(13, 1000, function() {
+            var photos = [
+                {
+                    title: '纪念堂',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_jiniantang.jpg" width="500" height="373" alt="纪念堂" />',
+                    point: {lng: 113.271147, lat: 23.139616}
+                },
+                {
+                    title: '陈家祠',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_chenjiaci.jpg" width="500" height="373" alt="陈家祠" />',
+                    point: {lng: 113.252764, lat: 23.131838}
+                },
+                {
+                    title: '看电影',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_dianying.jpg" width="500" height="373" alt="看电影" />',
+                    point: {lng: 113.268865, lat: 23.200458}
+                },
+                {
+                    title: '',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_chenjiaci1.jpg" width="500" height="373" alt="陈家祠" />',
+                    point: {lng: 113.252764, lat: 23.131838}
+                },
+                {
+                    title: '吃货',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_beijingroad.jpg" width="280" height="375" alt="吃货" />',
+                    point: {lng: 113.275619, lat: 23.127547}
+                },
+                {
+                    title: '',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_chenjiaci2.jpg" width="500" height="375" alt="陈家祠" />',
+                    point: {lng: 113.252764, lat: 23.131838}
+                },
+                {
+                    title: '臭美中...',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_dress1.jpg" width="280" height="375" alt="臭美" />',
+                    point: {lng: 113.275619, lat: 23.127547}
+                },
+                {
+                    title: '臭美中...',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_dress2.jpg" width="280" height="375" alt="臭美" />',
+                    point: {lng: 113.248583, lat: 23.123725}
+                },
+                {
+                    title: '',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_you.jpg" width="499" height="373" alt="You" />',
+                    point: {lng: 113.340995, lat: 23.106222}
+                },
+                {
+                    title: '又是离开，又是不舍...',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_leave.jpg" width="500" height="375" alt="离开" />',
+                    point: {lng: 113.358452, lat: 23.158306}
+                },
+                {
+                    title: '红海湾',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_sea.jpg" width="500" height="375" alt="红海湾" />',
+                    point: {lng: 115.573511, lat: 22.712665}
+                },
+                {
+                    title: '后山',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_s.jpg" width="500" height="375" alt="后山" />',
+                    point: {lng: 115.622433, lat: 23.184734}
+                }
+            ];
+            loopWin(photos, 2500, wannaTo);
+        });
+    }, 1000);
+}
+
+function wannaTo() {
+    map.closeInfoWindow();
+    zoomTo(5, 1000, function() {
+        map.panTo(new BMap.Point(CN_CEN.lng, CN_CEN.lat));
+        map.setMapType(BMAP_HYBRID_MAP);
+        setTimeout(function() {
+            var wanna = [
+                {
+                    title: '',
+                    content: '地图标上想去的地方，有一天，带着你去流浪。',
+                    point: CN_CEN
+                },
+                {
+                    title: '厦门',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_wannato_xiamen.jpg" width="500" height="338" alt="wannaTo" />',
+                    point: {lng: 118.148154, lat: 24.497912}
+                },
+                {
+                    title: '凤凰古镇',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_wannato_fenghuang.jpg" width="500" height="337" alt="wannaTo" />',
+                    point: {lng: 100.21191, lat: 26.928061}
+                },
+                {
+                    title: '桂林阳朔',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_wannato_guilin.jpg" width="499" height="399" alt="wannaTo" />',
+                    point: {lng: 110.503626, lat: 24.780932}
+                },
+                {
+                    title: '西藏',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_wannato_xizang.jpg" width="500" height="400" alt="wannaTo" />',
+                    point: {lng: 91.115691, lat: 29.687083}
+                },
+                {
+                    title: '杭州西湖',
+                    content: '<img src="http://lukesign.u.qiniudn.com/images_wannato_xihu.jpg" width="500" height="327" alt="wannaTo" />',
+                    point: {lng: 120.151946, lat: 30.250472}
+                }
+            ];
+        loopWin(wanna, 1000, showMarkerText);
+        }, 1000);
+    });
+}
+
+var markerText = [
+    {
+        lng : 80.050373,
+        lat : 39.924749
+    },
+    {
+        lng : 80.064171,
+        lat : 39.832612
+    },
+    {
+        lng : 80.064171,
+        lat : 39.747453
+    },
+    {
+        lng : 80.054973,
+        lat : 39.647966
+    },
+    {
+        lng : 80.031976,
+        lat : 39.566136
+    },
+    {
+        lng : 80.022777,
+        lat : 39.469951
+    },
+    {
+        lng : 79.990582,
+        lat : 39.366491
+    },
+    {
+        lng : 79.93539,
+        lat : 39.273603
+    },
+    {
+        lng : 79.875599,
+        lat : 39.216379
+    },
+    {
+        lng : 80.165356,
+        lat : 39.697727
+    },
+    {
+        lng : 80.289538,
+        lat : 39.70128
+    },
+    {
+        lng : 80.427518,
+        lat : 39.708386
+    },
+    {
+        lng : 80.537902,
+        lat : 39.708386
+    },
+    {
+        lng : 80.666683,
+        lat : 39.711938
+    },
+    {
+        lng : 80.795464,
+        lat : 39.715491
+    },
+    {
+        lng : 80.123962,
+        lat : 39.402184
+    },
+    {
+        lng : 80.271141,
+        lat : 39.420024
+    },
+    {
+        lng : 80.418319,
+        lat : 39.423591
+    },
+    {
+        lng : 80.570097,
+        lat : 39.423591
+    },
+    {
+        lng : 80.726474,
+        lat : 39.427159
+    },
+    {
+        lng : 80.873652,
+        lat : 39.434292
+    },
+    {
+        lng : 81.039228,
+        lat : 39.434292
+    },
+    {
+        lng : 80.501107,
+        lat : 40.105115
+    },
+    {
+        lng : 80.501107,
+        lat : 40.01676
+    },
+    {
+        lng : 80.501107,
+        lat : 39.921207
+    },
+    {
+        lng : 80.501107,
+        lat : 39.829066
+    },
+    {
+        lng : 80.496508,
+        lat : 39.623071
+    },
+    {
+        lng : 80.496508,
+        lat : 39.544773
+    },
+    {
+        lng : 80.491908,
+        lat : 39.370061
+    },
+    {
+        lng : 80.491908,
+        lat : 39.255725
+    },
+    {
+        lng : 80.491908,
+        lat : 39.166269
+    },
+    {
+        lng : 80.491908,
+        lat : 39.087453
+    },
+    {
+        lng : 79.820407,
+        lat : 39.015724
+    },
+    {
+        lng : 79.949188,
+        lat : 39.008548
+    },
+    {
+        lng : 80.100966,
+        lat : 39.030076
+    },
+    {
+        lng : 80.252744,
+        lat : 39.030076
+    },
+    {
+        lng : 80.41372,
+        lat : 39.030076
+    },
+    {
+        lng : 80.611491,
+        lat : 39.051598
+    },
+    {
+        lng : 80.744871,
+        lat : 39.05877
+    },
+    {
+        lng : 80.924245,
+        lat : 39.05877
+    },
+    {
+        lng : 81.089821,
+        lat : 39.073113
+    },
+    {
+        lng : 81.517558,
+        lat : 39.775851
+    },
+    {
+        lng : 81.517558,
+        lat : 39.708386
+    },
+    {
+        lng : 81.512958,
+        lat : 39.605284
+    },
+    {
+        lng : 81.512958,
+        lat : 39.480645
+    },
+    {
+        lng : 81.494561,
+        lat : 39.38434
+    },
+    {
+        lng : 81.494561,
+        lat : 39.262877
+    },
+    {
+        lng : 81.632541,
+        lat : 39.81488
+    },
+    {
+        lng : 81.738325,
+        lat : 39.811332
+    },
+    {
+        lng : 81.867106,
+        lat : 39.811332
+    },
+    {
+        lng : 82.018884,
+        lat : 39.804238
+    },
+    {
+        lng : 82.018884,
+        lat : 39.704833
+    },
+    {
+        lng : 82.023483,
+        lat : 39.598168
+    },
+    {
+        lng : 82.023483,
+        lat : 39.502027
+    },
+    {
+        lng : 82.028083,
+        lat : 39.395047
+    },
+    {
+        lng : 82.023483,
+        lat : 39.320062
+    },
+    {
+        lng : 82.018884,
+        lat : 39.24142
+    },
+    {
+        lng : 81.853308,
+        lat : 39.219957
+    },
+    {
+        lng : 81.696931,
+        lat : 39.230689
+    },
+    {
+        lng : 81.56815,
+        lat : 39.234266
+    },
+    {
+        lng : 81.63714,
+        lat : 39.530527
+    },
+    {
+        lng : 81.765921,
+        lat : 39.530527
+    },
+    {
+        lng : 81.903901,
+        lat : 39.530527
+    },
+    {
+        lng : 82.621395,
+        lat : 40.020297
+    },
+    {
+        lng : 82.621395,
+        lat : 39.921207
+    },
+    {
+        lng : 82.621395,
+        lat : 39.811332
+    },
+    {
+        lng : 82.621395,
+        lat : 39.708386
+    },
+    {
+        lng : 82.616796,
+        lat : 39.605284
+    },
+    {
+        lng : 82.621395,
+        lat : 39.459255
+    },
+    {
+        lng : 82.621395,
+        lat : 39.35935
+    },
+    {
+        lng : 82.607598,
+        lat : 39.24142
+    },
+    {
+        lng : 82.607598,
+        lat : 39.159108
+    },
+    {
+        lng : 82.483416,
+        lat : 39.647966
+    },
+    {
+        lng : 82.446621,
+        lat : 39.555455
+    },
+    {
+        lng : 82.391429,
+        lat : 39.469951
+    },
+    {
+        lng : 82.736379,
+        lat : 39.687067
+    },
+    {
+        lng : 82.79617,
+        lat : 39.59461
+    },
+    {
+        lng : 82.846762,
+        lat : 39.519841
+    },
+    {
+        lng : 82.984742,
+        lat : 39.829066
+    },
+    {
+        lng : 83.122722,
+        lat : 39.832612
+    },
+    {
+        lng : 83.260702,
+        lat : 39.836158
+    },
+    {
+        lng : 83.398681,
+        lat : 39.846795
+    },
+    {
+        lng : 83.486068,
+        lat : 39.860975
+    },
+    {
+        lng : 83.509065,
+        lat : 39.775851
+    },
+    {
+        lng : 83.495267,
+        lat : 39.694174
+    },
+    {
+        lng : 83.47227,
+        lat : 39.626628
+    },
+    {
+        lng : 82.966345,
+        lat : 39.544773
+    },
+    {
+        lng : 83.150318,
+        lat : 39.551895
+    },
+    {
+        lng : 83.283698,
+        lat : 39.551895
+    },
+    {
+        lng : 83.426277,
+        lat : 39.559016
+    },
+    {
+        lng : 83.578055,
+        lat : 39.559016
+    },
+    {
+        lng : 83.711435,
+        lat : 39.569696
+    },
+    {
+        lng : 83.2699,
+        lat : 40.140424
+    },
+    {
+        lng : 83.251503,
+        lat : 40.066253
+    },
+    {
+        lng : 83.237705,
+        lat : 39.97077
+    },
+    {
+        lng : 83.187112,
+        lat : 39.754553
+    },
+    {
+        lng : 83.145718,
+        lat : 39.658632
+    },
+    {
+        lng : 83.095126,
+        lat : 39.47708
+    },
+    {
+        lng : 83.072129,
+        lat : 39.337923
+    },
+    {
+        lng : 83.021537,
+        lat : 39.216379
+    },
+    {
+        lng : 82.99854,
+        lat : 39.159108
+    },
+    {
+        lng : 83.219308,
+        lat : 39.47708
+    },
+    {
+        lng : 83.315893,
+        lat : 39.387909
+    },
+    {
+        lng : 83.380284,
+        lat : 39.312917
+    },
+    {
+        lng : 83.47687,
+        lat : 39.259301
+    },
+    {
+        lng : 83.596452,
+        lat : 39.202065
+    },
+    {
+        lng : 84.714088,
+        lat : 40.249767
+    },
+    {
+        lng : 84.626701,
+        lat : 40.228618
+    },
+    {
+        lng : 84.49332,
+        lat : 40.179244
+    },
+    {
+        lng : 84.364539,
+        lat : 40.151014
+    },
+    {
+        lng : 84.240358,
+        lat : 40.112178
+    },
+    {
+        lng : 84.148371,
+        lat : 40.080387
+    },
+    {
+        lng : 84.111577,
+        lat : 39.992
+    },
+    {
+        lng : 84.139172,
+        lat : 39.914124
+    },
+    {
+        lng : 84.198964,
+        lat : 39.818426
+    },
+    {
+        lng : 84.014991,
+        lat : 39.690621
+    },
+    {
+        lng : 84.175967,
+        lat : 39.708386
+    },
+    {
+        lng : 84.318546,
+        lat : 39.751003
+    },
+    {
+        lng : 84.479522,
+        lat : 39.743902
+    },
+    {
+        lng : 84.612903,
+        lat : 39.772302
+    },
+    {
+        lng : 84.810674,
+        lat : 39.782949
+    },
+    {
+        lng : 84.976249,
+        lat : 39.807785
+    },
+    {
+        lng : 85.114229,
+        lat : 39.829066
+    },
+    {
+        lng : 84.589906,
+        lat : 40.101583
+    },
+    {
+        lng : 84.589906,
+        lat : 40.009687
+    },
+    {
+        lng : 84.589906,
+        lat : 39.892869
+    },
+    {
+        lng : 84.580708,
+        lat : 39.676405
+    },
+    {
+        lng : 84.571509,
+        lat : 39.519841
+    },
+    {
+        lng : 84.571509,
+        lat : 39.362921
+    },
+    {
+        lng : 84.576108,
+        lat : 39.255725
+    },
+    {
+        lng : 84.576108,
+        lat : 39.166269
+    },
+    {
+        lng : 84.465724,
+        lat : 39.64441
+    },
+    {
+        lng : 84.350741,
+        lat : 39.566136
+    },
+    {
+        lng : 84.240358,
+        lat : 39.480645
+    },
+    {
+        lng : 84.024189,
+        lat : 39.35578
+    },
+    {
+        lng : 84.139172,
+        lat : 39.427159
+    },
+    {
+        lng : 84.695691,
+        lat : 39.694174
+    },
+    {
+        lng : 84.815273,
+        lat : 39.605284
+    },
+    {
+        lng : 84.916458,
+        lat : 39.516279
+    },
+    {
+        lng : 85.036041,
+        lat : 39.452124
+    },
+    {
+        lng : 85.123428,
+        lat : 39.402184
+    },
+    {
+        lng : 85.224613,
+        lat : 39.352209
+    },
+    {
+        lng : 85.376391,
+        lat : 39.298623
+    },
+    {
+        lng : 85.500572,
+        lat : 39.373631
+    },
+    {
+        lng : 85.51437,
+        lat : 39.537651
+    },
+    {
+        lng : 85.348795,
+        lat : 39.555455
+    },
+    {
+        lng : 85.24761,
+        lat : 39.480645
+    },
+    {
+        lng : 81.407174,
+        lat : 40.573219
+    },
+    {
+        lng : 81.250797,
+        lat : 40.618798
+    },
+    {
+        lng : 81.103618,
+        lat : 40.639824
+    },
+    {
+        lng : 80.95644,
+        lat : 40.63632
+    },
+    {
+        lng : 80.901248,
+        lat : 40.562697
+    },
+    {
+        lng : 80.951841,
+        lat : 40.47143
+    },
+    {
+        lng : 81.057625,
+        lat : 40.383557
+    },
+    {
+        lng : 81.204804,
+        lat : 40.327257
+    },
+    {
+        lng : 81.388777,
+        lat : 40.306132
+    },
+    {
+        lng : 81.526756,
+        lat : 40.288523
+    },
+    {
+        lng : 81.696931,
+        lat : 40.277955
+    },
+    {
+        lng : 81.526756,
+        lat : 40.65734
+    },
+    {
+        lng : 81.563551,
+        lat : 40.804295
+    },
+    {
+        lng : 81.696931,
+        lat : 40.846222
+    },
+    {
+        lng : 81.830312,
+        lat : 40.83225
+    },
+    {
+        lng : 81.922298,
+        lat : 40.751849
+    },
+    {
+        lng : 81.926898,
+        lat : 40.653837
+    },
+    {
+        lng : 81.9131,
+        lat : 40.552172
+    },
+    {
+        lng : 81.885504,
+        lat : 40.48548
+    },
+    {
+        lng : 81.848709,
+        lat : 40.387074
+    },
+    {
+        lng : 81.793517,
+        lat : 40.313174
+    }
+];
+
+function addMarker(lng, lat) {
+    var marker = new BMap.Marker( new BMap.Point(lng, lat) );
+    marker.setAnimation(BMAP_ANIMATION_DROP);
+    map.addOverlay(marker)
+}
+
+if (!Array.prototype.shuffle) {
+    Array.prototype.shuffle = function() {
+        for(var j, x, i = this.length; i; j = parseInt(Math.random() * i), x = this[--i], this[i] = this[j], this[j] = x);
+        return this;
+    };
+}
+markerText.shuffle();
+function loopAddMarker(markers, callback) {
+    var i           = 0;
+    var len         = markers.length;
+    var callback    = callback || function() {};
+    var loop        = '';
+    function loopAddMarkerInner() {
+        if( i == len ) {
+            clearTimeout(loop);
+            callback();
+            return false;
+        }
+        addMarker(markers[i].lng, markers[i].lat);
+        i++;
+        loop = setTimeout(loopAddMarkerInner, 300);
+    }
+    loopAddMarkerInner();
+}
+
+function showMarkerText() {
+    map.closeInfoWindow();
+    map.panTo(new BMap.Point(82.699584, 39.8202));
+    setTimeout(function() {
+        zoomTo(9, 1000, function() {
+            loopAddMarker(markerText, function() {
+                setTimeout(function() {
+                    slideDown('theEnd', 1000, function() {
+                        var theEndText = '<div id="theEndText">Happy birthday to my dearest Meijun :) --by LOO2K<br />' + 
+                                         '<button data-toggle="wshare" data-type="weibo">分享到微博</button>' + 
+                                         '<button onclick="window.location.reload();">再看一次</button></div>';
+                        document.getElementById('theEnd').innerHTML = theEndText;
+                    });
+                }, 5000);
+            });
+        })
+    }, 1000);
+}
+
+function slideDown(id, speed, callback) {
+    var object  = document.getElementById(id);
+    var timeout = speed*0.001;
+    var callback= callback || function() {};
+    var loop    = '';
+    object.style.display = 'block';
+    object.style.height = '0%';
+    function slideDownInner() {
+        var curHeight = parseFloat(object.style.height) || 0;
+        if( curHeight >= 100 ) {
+            clearTimeout(loop);
+            callback();
+            return false;
+        }
+        object.style.height = (curHeight + 0.1) + '%';
+        loop = setTimeout(slideDownInner, timeout);
+    }
+    slideDownInner();
+}
+
+function preLoadImages(imagesList, callback) {
+    var len     = imagesList.length;
+    var i       = 0;
+    var images  = {};
+    var callback = callback || function() {};
+    function loadImage() {
+        if( i == len ) {
+            callback();
+            return false;
+        }
+        images[i]           = new Image();
+        images[i].src       = imagesList[i];
+        i++;
+        loadImage();
+    }
+    loadImage();
+}
+
+var map;
+
+function initMap() {
+    map = new BMap.Map("map");
+    var point = new BMap.Point(MP_CEN.lng, MP_CEN.lat);
+    map.centerAndZoom(point, 4);
+    map.disableDragging();
+    map.disableDoubleClickZoom();
+    init();
+}
+
+function init() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('theEnd').style.height = '0';
+    document.getElementById('theEnd').innerHTML = '';
+    map.setMapType(BMAP_NORMAL_MAP);
+    var point = new BMap.Point(MP_CEN.lng, MP_CEN.lat);
+    map.centerAndZoom(point, 4);
+    map.clearOverlays();
+    map.reset();
+    MUSIC.play();
+    map.panTo(new BMap.Point(GZ_GTC.lng, GZ_GTC.lat));
+    panZoom_GTC();
+}
+ 
+function loadScript() {
+  var script = document.createElement("script");
+  script.src = "http://api.map.baidu.com/api?v=1.2&callback=initMap";
+  document.body.appendChild(script);
+}
+
+window.onload = function() {
+    var imglist = [
+        'http://lukesign.u.qiniudn.com/images_ticket.jpg',
+        'http://lukesign.u.qiniudn.com/images_beijingroad.jpg',
+        'http://lukesign.u.qiniudn.com/images_chenjiaci.jpg',
+        'http://lukesign.u.qiniudn.com/images_chenjiaci1.jpg',
+        'http://lukesign.u.qiniudn.com/images_chenjiaci2.jpg',
+        'http://lukesign.u.qiniudn.com/images_dianying.jpg',
+        'http://lukesign.u.qiniudn.com/images_dress1.jpg',
+        'http://lukesign.u.qiniudn.com/images_dress2.jpg',
+        'http://lukesign.u.qiniudn.com/images_jiniantang.jpg',
+        'http://lukesign.u.qiniudn.com/images_leave.jpg',
+        'http://lukesign.u.qiniudn.com/images_s.jpg',
+        'http://lukesign.u.qiniudn.com/images_sea.jpg',
+        'http://lukesign.u.qiniudn.com/images_you.jpg',
+        'http://lukesign.u.qiniudn.com/images_wannato_fenghuang.jpg',
+        'http://lukesign.u.qiniudn.com/images_wannato_guilin.jpg',
+        'http://lukesign.u.qiniudn.com/images_wannato_xiamen.jpg',
+        'http://lukesign.u.qiniudn.com/images_wannato_xihu.jpg',
+        'http://lukesign.u.qiniudn.com/images_wannato_xizang.jpg'
+    ];
+
+    soundManager.setup({
+        url: 'http://lukesign.u.qiniudn.com/sm/',
+        onready: initMP3
+    });
+
+    function initMP3() {
+
+        MUSIC = soundManager.createSound({
+            id: 'mp3',
+            url: 'http://lukesign.u.qiniudn.com/LemonTree.mp3',
+            onload: function() {
+                preLoadImages(imglist, function() {
+                    setTimeout(function() {
+                        var loading = document.getElementById('loading');
+                        loading.style.cursor = 'pointer';
+                        loading.innerHTML = '点击开始';
+                        loading.onclick = function() {
+                            screenfull && screenfull.request();
+                            loadScript();
+                        }
+                    }, 3000);
+                });
+            }
+        });
+        MUSIC.load();
+    }
+};
+</script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?c142366bae08a5add7c3c1ce2703b10d";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+</body>
+</html>
